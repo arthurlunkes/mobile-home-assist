@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+
 import '../widgets/action_button.dart';
 
 class ControlPage extends StatelessWidget {
   const ControlPage({super.key});
 
-  // 🔹 Funções vazias
   void turnLightOn() {}
   void turnLightOff() {}
-  void turnFanOn() {}
-  void turnFanOff() {}
+  void openGate() {}
+  void closeGate() {}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Controle da Casa')),
+      appBar: AppBar(
+        title: const Text('Controle da Casa'),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -42,24 +44,24 @@ class ControlPage extends StatelessWidget {
             const SizedBox(height: 20),
 
             const Text(
-              'Ventilador',
+              'Portão',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 10),
 
             ActionButton(
-              label: 'Ligar Ventilador',
-              icon: Icons.toys,
-              onPressed: turnFanOn,
+              label: 'Abrir Portão',
+              icon: Icons.door_front_door,
+              onPressed: openGate,
             ),
 
             const SizedBox(height: 10),
 
             ActionButton(
-              label: 'Desligar Ventilador',
-              icon: Icons.toys_outlined,
-              onPressed: turnFanOff,
+              label: 'Fechar Portão',
+              icon: Icons.door_back_door,
+              onPressed: closeGate,
             ),
           ],
         ),

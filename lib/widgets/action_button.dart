@@ -18,11 +18,8 @@ class ActionButton extends StatelessWidget {
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: onPressed,
-        icon: icon != null ? Icon(icon) : const SizedBox(),
+        icon: icon != null ? Icon(icon) : const SizedBox.shrink(),
         label: Text(label),
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-        ),
       ),
     );
   }
