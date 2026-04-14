@@ -1,30 +1,68 @@
 import 'package:flutter/material.dart';
 
+import '../controllers/home_controller.dart';
 import '../widgets/action_button.dart';
 import '../widgets/metric_card.dart';
 import 'config_page.dart';
 import 'control_page.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
-  void refreshInfo() {}
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final _controller = HomeController();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_onControllerChanged);
+    _controller.carregar();
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onControllerChanged);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onControllerChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _refreshInfo() async {
+    await _controller.carregar();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final state = _controller.state;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Home Assist', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Home Assist',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: refreshInfo,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _refreshInfo),
           IconButton(
             icon: const Icon(Icons.settings),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ConfigPage()),
-            ),
+            onPressed: () async {
+              await Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const ConfigPage()));
+              if (!mounted) {
+                return;
+              }
+              await _refreshInfo();
+            },
           ),
         ],
       ),
@@ -38,21 +76,21 @@ class HomePage extends StatelessWidget {
                 Expanded(
                   child: MetricCard(
                     title: 'Temperatura',
-                    value: '-- °C',
+                    value: _controller.formatarValor(state.temperature, '°C'),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: MetricCard(
                     title: 'Umidade',
-                    value: '-- %',
+                    value: _controller.formatarValor(state.humidity, '%'),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: MetricCard(
                     title: 'Luminosidade',
-                    value: '-- lx',
+                    value: _controller.formatarValor(state.luminosity, 'lx'),
                   ),
                 ),
               ],
@@ -61,9 +99,15 @@ class HomePage extends StatelessWidget {
             ActionButton(
               label: 'Controle da Casa',
               icon: Icons.home,
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ControlPage()),
-              ),
+              onPressed: () async {
+                await Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const ControlPage()));
+                if (!mounted) {
+                  return;
+                }
+                await _refreshInfo();
+              },
             ),
           ],
         ),
