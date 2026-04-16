@@ -57,19 +57,20 @@ class ConfigController extends ChangeNotifier {
     _carregando = true;
     notifyListeners();
 
-    final conectado = await _connectionTester.testConnection(
+    final resultado = await _connectionTester.testConnection(
       _config.ip,
       _config.port,
     );
 
-    _config.connected = conectado;
-    if (!conectado) {
+    _config.connected = resultado.connected;
+    _config.macAddress = resultado.macAddress;
+    if (!resultado.connected) {
       _config.macAddress = null;
     }
     await _dao.salvar(_config);
 
     _carregando = false;
     notifyListeners();
-    return conectado;
+    return resultado.connected;
   }
 }

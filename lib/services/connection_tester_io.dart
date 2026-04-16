@@ -1,21 +1,47 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'connection_tester.dart';
 
 class _IoConnectionTester implements ConnectionTester {
   @override
-  Future<bool> testConnection(String ip, int port) async {
+  Future<ConnectionTestResult> testConnection(String ip, int port) async {
+    final client = HttpClient()..connectionTimeout = const Duration(seconds: 3);
+
     try {
-      final socket = await Socket.connect(
-        ip,
-        port,
-        timeout: const Duration(seconds: 3),
+      final request = await client
+          .get(ip, port, '/info')
+          .timeout(const Duration(seconds: 3));
+      final response = await request.close().timeout(
+        const Duration(seconds: 3),
       );
-      socket.destroy();
-      return true;
+      final body = await response.transform(utf8.decoder).join();
+
+      if (response.statusCode != HttpStatus.ok) {
+        return const ConnectionTestResult(connected: false);
+      }
+
+      final json = jsonDecode(body);
+      if (json is! Map<String, dynamic>) {
+        return const ConnectionTestResult(connected: false);
+      }
+
+      final macAddress = _normalizeMacAddress(json['mac']);
+      return ConnectionTestResult(connected: true, macAddress: macAddress);
     } catch (_) {
-      return false;
+      return const ConnectionTestResult(connected: false);
+    } finally {
+      client.close(force: true);
     }
+  }
+
+  String? _normalizeMacAddress(Object? value) {
+    if (value is! String) {
+      return null;
+    }
+
+    final macAddress = value.trim();
+    return macAddress.isEmpty ? null : macAddress;
   }
 }
 
