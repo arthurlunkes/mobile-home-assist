@@ -41,14 +41,6 @@ class _ControlPageState extends State<ControlPage> {
     await _controller.setLuz(false);
   }
 
-  Future<void> _openGate() async {
-    await _controller.setPortao(true);
-  }
-
-  Future<void> _closeGate() async {
-    await _controller.setPortao(false);
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = _controller.state;
@@ -67,8 +59,6 @@ class _ControlPageState extends State<ControlPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Luz: ${state.lightOn ? 'Ligada' : 'Desligada'}'),
-                    const SizedBox(height: 4),
-                    Text('Portão: ${state.gateOpen ? 'Aberto' : 'Fechado'}'),
                   ],
                 ),
               ),
@@ -82,40 +72,9 @@ class _ControlPageState extends State<ControlPage> {
             const SizedBox(height: 10),
 
             ActionButton(
-              label: 'Ligar Luz',
-              icon: Icons.lightbulb,
-              onPressed: _turnLightOn,
-            ),
-
-            const SizedBox(height: 10),
-
-            ActionButton(
-              label: 'Desligar Luz',
-              icon: Icons.lightbulb_outline,
-              onPressed: _turnLightOff,
-            ),
-
-            const SizedBox(height: 20),
-
-            const Text(
-              'Portão',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 10),
-
-            ActionButton(
-              label: 'Abrir Portão',
-              icon: Icons.door_front_door,
-              onPressed: _openGate,
-            ),
-
-            const SizedBox(height: 10),
-
-            ActionButton(
-              label: 'Fechar Portão',
-              icon: Icons.door_back_door,
-              onPressed: _closeGate,
+              label: state.lightOn ? 'Desligar Luz' : 'Ligar Luz',
+              icon: state.lightOn ? Icons.lightbulb_outline : Icons.lightbulb,
+              onPressed: state.lightOn ? _turnLightOff : _turnLightOn,
             ),
           ],
         ),
