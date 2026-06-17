@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:maps_launcher/maps_launcher.dart';
 
 import '../controllers/config_controller.dart';
+import '../services/wifi_scanner_service.dart';
 import '../widgets/action_button.dart';
 
 class ConfigPage extends StatefulWidget {
@@ -33,98 +36,246 @@ class _ConfigPageState extends State<ConfigPage> {
     }
   }
 
-  Future<void> connectDevice(BuildContext context) async {
-    final ipController = TextEditingController(text: _controller.config.ip);
-    final portController = TextEditingController(
-      text: _controller.config.port > 0
-          ? _controller.config.port.toString()
-          : '',
-    );
+  Future<void> connectDevice() async {
+    bool step1Done = false;
+    bool loadingNetworks = false;
+    bool provisioning = false;
+    List<WifiNetwork> networks = [];
+    String? selectedSsid;
+    bool isManualSsid = false;
+    final ssidManualController = TextEditingController();
+    final passwordController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
-    final result = await showDialog<Map<String, String?>>(
+    final confirmed = await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Conectar dispositivo'),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: ipController,
-                  decoration: const InputDecoration(labelText: 'Endereço IP'),
-                  keyboardType: TextInputType.text,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Informe o IP';
-                    }
-                    return null;
-                  },
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            if (!step1Done) {
+              return AlertDialog(
+                title: const Text('Conectar dispositivo'),
+                content: const Text(
+                  'Conecte seu celular na rede WiFi ESP32-SETUP-ARTHUR e retorne ao aplicativo.',
                 ),
-                // Espaçamento entre os campos
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: portController,
-                  decoration: const InputDecoration(labelText: 'Porta'),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    final port = int.tryParse(value ?? '');
-                    if (port == null || port <= 0) {
-                      return 'Informe uma porta válida';
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancelar'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      setDialogState(() {
+                        step1Done = true;
+                        loadingNetworks = true;
+                      });
+                      
+                      try {
+                        final scanner = WifiScannerService();
+                        final list = await scanner.scanNetworks();
+                        
+                        if (context.mounted) {
+                          setDialogState(() {
+                            networks = list;
+                            loadingNetworks = false;
+                            if (networks.isEmpty) {
+                              isManualSsid = true;
+                            }
+                          });
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          setDialogState(() {
+                            loadingNetworks = false;
+                            isManualSsid = true;
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Erro ao escanear WiFi: $e')),
+                          );
+                        }
+                      }
+                    },
+                    child: const Text('Já conectei'),
+                  ),
+                ],
+              );
+            }
+
+            if (loadingNetworks) {
+              return const AlertDialog(
+                title: Text('Buscando redes...'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Center(child: CircularProgressIndicator()),
+                    SizedBox(height: 16),
+                    Text('Aguarde, escaneando redes WiFi...'),
+                  ],
+                ),
+              );
+            }
+
+            if (provisioning) {
+              return const AlertDialog(
+                title: Text('Enviando credenciais...'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Center(child: CircularProgressIndicator()),
+                    SizedBox(height: 16),
+                    Text('Aguarde, enviando para o ESP32...'),
+                  ],
+                ),
+              );
+            }
+
+            return AlertDialog(
+              title: const Text('Configurar WiFi'),
+              content: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isManualSsid)
+                      TextFormField(
+                        controller: ssidManualController,
+                        decoration: const InputDecoration(
+                          labelText: 'Rede WiFi (SSID)',
+                        ),
+                        keyboardType: TextInputType.text,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Informe o SSID';
+                          }
+                          return null;
+                        },
+                      )
+                    else
+                      DropdownButtonFormField<String>(
+                        isExpanded: true,
+                        value: selectedSsid,
+                        decoration: const InputDecoration(labelText: 'Rede WiFi (SSID)'),
+                        items: networks.map((net) {
+                          return DropdownMenuItem(
+                            value: net.ssid, 
+                            child: Text(
+                              '${net.ssid} (${net.rssi} dBm)',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          setDialogState(() {
+                            selectedSsid = val;
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Selecione a rede WiFi';
+                          }
+                          return null;
+                        },
+                      ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          setDialogState(() {
+                            isManualSsid = !isManualSsid;
+                          });
+                        },
+                        child: Text(
+                          isManualSsid
+                              ? 'Selecionar da lista'
+                              : 'Digitar rede manualmente',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: passwordController,
+                      decoration: const InputDecoration(
+                        labelText: 'Senha da rede WiFi',
+                      ),
+                      keyboardType: TextInputType.visiblePassword,
+                      obscureText: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Informe a senha';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: provisioning ? null : () => Navigator.of(context).pop(),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: provisioning ? null : () async {
+                    if (formKey.currentState?.validate() != true) {
+                      return;
                     }
-                    return null;
+                    
+                    final ssid = isManualSsid ? ssidManualController.text.trim() : selectedSsid;
+                    if (ssid == null || ssid.isEmpty) return;
+
+                    setDialogState(() {
+                      provisioning = true;
+                    });
+                    
+                    final password = passwordController.text;
+
+                    final result = await _controller.provisionDevice(
+                      ssid: ssid,
+                      password: password,
+                    );
+                    
+                    if (context.mounted) {
+                      Navigator.of(context).pop(result);
+                    }
                   },
+                  child: const Text('Confirmar'),
                 ),
               ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (formKey.currentState?.validate() != true) {
-                  return;
-                }
-                Navigator.of(context).pop({
-                  'ip': ipController.text.trim(),
-                  'port': portController.text.trim(),
-                });
-              },
-              child: const Text('Conectar'),
-            ),
-          ],
+            );
+          },
         );
       },
     );
-    if (result == null) {
-      return;
-    }
 
-    final ip = result['ip'] ?? '';
-    final port = int.tryParse(result['port'] ?? '') ?? 0;
+    if (confirmed == null || confirmed is! ProvisionResult) return;
+    
+    if (!mounted) return;
 
-    final sucesso = await _controller.salvar(ip: ip, port: port);
-    if (!mounted) {
-      return;
-    }
+    final result = confirmed;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          sucesso
-              ? 'Dispositivo salvo com sucesso'
-              : 'Erro ao salvar dispositivo',
+    if (result.success) {
+      final macMsg = result.macAddress != null
+          ? '\nMAC do dispositivo: ${result.macAddress}'
+          : '';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${result.message}$macMsg'),
+          duration: const Duration(seconds: 5),
         ),
-      ),
-    );
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.message ?? 'Erro desconhecido'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
   }
 
-  Future<void> _testarConexao(BuildContext context) async {
+  Future<void> _testarConexao() async {
     final sucesso = await _controller.testarConexao();
     if (!mounted) {
       return;
@@ -141,14 +292,40 @@ class _ConfigPageState extends State<ConfigPage> {
     );
   }
 
+  Future<void> _atualizarLocalizacao() async {
+    final sucesso = await _controller.atualizarLocalizacaoAtual();
+    if (!mounted) {
+      return;
+    }
+
+    final mensagem = sucesso
+        ? 'Localização atual salva com sucesso'
+        : (_controller.erroLocalizacao ??
+              'Não foi possível atualizar localização');
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(mensagem)));
+  }
+
+  String _formatCoord(double value) {
+    return value.toStringAsFixed(6);
+  }
+
   @override
   Widget build(BuildContext context) {
     final config = _controller.config;
     final status = config.isConnected ? 'Conectado' : 'Desconectado';
+    final hasLocation = config.hasLocation;
+    final lat = config.latitude;
+    final lng = config.longitude;
+    final locationText = hasLocation
+        ? '${_formatCoord(lat!)} / ${_formatCoord(lng!)}'
+        : '--';
 
     return Scaffold(
       appBar: AppBar(title: const Text('Configurações')),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
@@ -168,9 +345,13 @@ class _ConfigPageState extends State<ConfigPage> {
                     const SizedBox(height: 10),
                     Text('Status: $status'),
                     const SizedBox(height: 10),
-                    Text('IP: ${config.ip.isEmpty ? '--' : config.ip}'),
+                    Text(
+                      'Hostname: ${config.hostname.isEmpty ? '--' : config.hostname}',
+                    ),
                     const SizedBox(height: 6),
                     Text('Porta: ${config.port > 0 ? config.port : '--'}'),
+                    const SizedBox(height: 6),
+                    Text('Localização: $locationText'),
                     if (config.isConnected) ...[
                       const SizedBox(height: 6),
                       Text(
@@ -185,16 +366,59 @@ class _ConfigPageState extends State<ConfigPage> {
             ActionButton(
               label: 'Conectar Dispositivo',
               icon: Icons.wifi,
-              onPressed: () => connectDevice(context),
+              onPressed: connectDevice,
             ),
             const SizedBox(height: 12),
             ActionButton(
               label: 'Testar conexão',
               icon: Icons.network_check,
-              onPressed: _controller.carregando
-                  ? () {}
-                  : () => _testarConexao(context),
+              onPressed: _controller.carregando ? () {} : _testarConexao,
             ),
+            const SizedBox(height: 12),
+            ActionButton(
+              label: _controller.buscandoLocalizacao ? 'Buscando Localização...' : 'Localização atual',
+              icon: Icons.my_location,
+              onPressed: _controller.buscandoLocalizacao ? () {} : _atualizarLocalizacao,
+            ),
+            if (_controller.buscandoLocalizacao) ...[
+              const SizedBox(height: 24),
+              const Center(child: CircularProgressIndicator()),
+              const SizedBox(height: 24),
+            ] else if (hasLocation) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 220,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: GoogleMap(
+                    key: ValueKey(
+                      'mini-map-${_formatCoord(lat!)}-${_formatCoord(lng!)}',
+                    ),
+                    initialCameraPosition: CameraPosition(
+                      target: LatLng(lat, lng),
+                      zoom: 16,
+                    ),
+                    myLocationButtonEnabled: false,
+                    zoomControlsEnabled: false,
+                    markers: {
+                      Marker(
+                        markerId: const MarkerId('device-location'),
+                        position: LatLng(lat, lng),
+                      ),
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () => MapsLauncher.launchCoordinates(lat, lng),
+                  icon: const Icon(Icons.map_outlined),
+                  label: const Text('Abrir no Maps'),
+                ),
+              ),
+            ],
           ],
         ),
       ),

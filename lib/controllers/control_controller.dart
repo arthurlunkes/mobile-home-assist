@@ -42,7 +42,7 @@ class ControlController extends ChangeNotifier {
     }
 
     final sucesso = await _deviceCommandService.setLight(
-      ip: config.ip,
+      hostname: config.hostname,
       port: config.port,
       isOn: ligada,
     );

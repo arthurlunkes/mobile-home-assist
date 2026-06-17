@@ -2,7 +2,7 @@ import 'connection_tester.dart';
 
 class _UnsupportedConnectionTester implements ConnectionTester {
   @override
-  Future<ConnectionTestResult> testConnection(String ip, int port) async {
+  Future<ConnectionTestResult> testConnection(String hostname, int port) async {
     return const ConnectionTestResult(connected: false);
   }
 }

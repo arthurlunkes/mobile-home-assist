@@ -5,7 +5,7 @@ import 'device_command_service.dart';
 class _IoDeviceCommandService implements DeviceCommandService {
   @override
   Future<bool> setLight({
-    required String ip,
+    required String hostname,
     required int port,
     required bool isOn,
   }) async {
@@ -14,7 +14,7 @@ class _IoDeviceCommandService implements DeviceCommandService {
     try {
       final path = isOn ? '/H' : '/L';
       final request = await client
-          .get(ip, port, path)
+          .get(hostname, port, path)
           .timeout(const Duration(seconds: 3));
       final response = await request.close().timeout(
         const Duration(seconds: 3),

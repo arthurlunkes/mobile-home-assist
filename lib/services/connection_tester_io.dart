@@ -5,12 +5,12 @@ import 'connection_tester.dart';
 
 class _IoConnectionTester implements ConnectionTester {
   @override
-  Future<ConnectionTestResult> testConnection(String ip, int port) async {
+  Future<ConnectionTestResult> testConnection(String hostname, int port) async {
     final client = HttpClient()..connectionTimeout = const Duration(seconds: 3);
 
     try {
       final request = await client
-          .get(ip, port, '/info')
+          .get(hostname, port, '/info')
           .timeout(const Duration(seconds: 3));
       final response = await request.close().timeout(
         const Duration(seconds: 3),

@@ -1,38 +1,47 @@
 class DeviceConfig {
   static const tableName = 'device_config';
   static const fieldId = 'id';
-  static const fieldIp = 'ip';
+  static const fieldHostname = 'hostname';
   static const fieldPort = 'port';
   static const fieldMacAddress = 'mac_address';
   static const fieldConnected = 'connected';
+  static const fieldLatitude = 'latitude';
+  static const fieldLongitude = 'longitude';
   static const fieldUpdatedAt = 'updated_at';
 
   int id;
-  String ip;
+  String hostname;
   int port;
   String? macAddress;
   bool connected;
+  double? latitude;
+  double? longitude;
   DateTime updatedAt;
 
   DeviceConfig({
     this.id = 1,
-    required this.ip,
+    required this.hostname,
     required this.port,
     this.macAddress,
     this.connected = false,
+    this.latitude,
+    this.longitude,
     DateTime? updatedAt,
   }) : updatedAt = updatedAt ?? DateTime.now();
 
-  bool get hasEndpoint => ip.trim().isNotEmpty && port > 0;
+  bool get hasEndpoint => hostname.trim().isNotEmpty && port > 0;
   bool get isConnected => connected;
+  bool get hasLocation => latitude != null && longitude != null;
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       fieldId: id,
-      fieldIp: ip,
+      fieldHostname: hostname,
       fieldPort: port,
       fieldMacAddress: macAddress,
       fieldConnected: connected ? 1 : 0,
+      fieldLatitude: latitude,
+      fieldLongitude: longitude,
       fieldUpdatedAt: updatedAt.toIso8601String(),
     };
   }
@@ -40,13 +49,28 @@ class DeviceConfig {
   factory DeviceConfig.fromMap(Map<String, dynamic> map) {
     return DeviceConfig(
       id: map[fieldId] is int ? map[fieldId] as int : 1,
-      ip: map[fieldIp] is String ? map[fieldIp] as String : '',
+      hostname: map[fieldHostname] is String ? map[fieldHostname] as String : '',
       port: map[fieldPort] is int ? map[fieldPort] as int : 0,
       macAddress: map[fieldMacAddress] as String?,
       connected: map[fieldConnected] == 1,
+      latitude: _toDouble(map[fieldLatitude]),
+      longitude: _toDouble(map[fieldLongitude]),
       updatedAt: map[fieldUpdatedAt] is String
           ? DateTime.tryParse(map[fieldUpdatedAt] as String) ?? DateTime.now()
           : DateTime.now(),
     );
+  }
+
+  static double? _toDouble(dynamic value) {
+    if (value is double) {
+      return value;
+    }
+    if (value is int) {
+      return value.toDouble();
+    }
+    if (value is String) {
+      return double.tryParse(value);
+    }
+    return null;
   }
 }

@@ -11,10 +11,12 @@ class DeviceConfigDao {
       DeviceConfig.tableName,
       columns: [
         DeviceConfig.fieldId,
-        DeviceConfig.fieldIp,
+        DeviceConfig.fieldHostname,
         DeviceConfig.fieldPort,
         DeviceConfig.fieldMacAddress,
         DeviceConfig.fieldConnected,
+        DeviceConfig.fieldLatitude,
+        DeviceConfig.fieldLongitude,
         DeviceConfig.fieldUpdatedAt,
       ],
       where: '${DeviceConfig.fieldId} = ?',
@@ -23,7 +25,7 @@ class DeviceConfigDao {
     );
 
     if (result.isEmpty) {
-      final config = DeviceConfig(ip: '', port: 0);
+      final config = DeviceConfig(hostname: '', port: 0);
       await salvar(config);
       return config;
     }

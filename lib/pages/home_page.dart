@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:maps_launcher/maps_launcher.dart';
+
 import '../controllers/home_controller.dart';
 import '../widgets/action_button.dart';
 import '../widgets/metric_card.dart';
@@ -109,6 +112,67 @@ class _HomePageState extends State<HomePage> {
                 await _refreshInfo();
               },
             ),
+            const SizedBox(height: 16),
+            ActionButton(
+              label: 'Atualizar Localização',
+              icon: Icons.my_location,
+              onPressed: _controller.buscandoLocalizacao 
+                  ? () {} 
+                  : () async {
+                      final sucesso = await _controller.atualizarLocalizacaoAtual();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(sucesso
+                                ? 'Localização salva com sucesso'
+                                : 'Erro ao buscar localização'),
+                          ),
+                        );
+                      }
+                    },
+            ),
+            if (_controller.buscandoLocalizacao) ...[
+              const SizedBox(height: 24),
+              const Center(child: CircularProgressIndicator()),
+              const SizedBox(height: 24),
+            ] else if (_controller.deviceConfig.hasLocation) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 220,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: GoogleMap(
+                    key: ValueKey(
+                      'mini-map-home-${_controller.deviceConfig.latitude}-${_controller.deviceConfig.longitude}',
+                    ),
+                    initialCameraPosition: CameraPosition(
+                      target: LatLng(_controller.deviceConfig.latitude!, _controller.deviceConfig.longitude!),
+                      zoom: 16,
+                    ),
+                    myLocationButtonEnabled: false,
+                    zoomControlsEnabled: false,
+                    markers: {
+                      Marker(
+                        markerId: const MarkerId('device-location-home'),
+                        position: LatLng(_controller.deviceConfig.latitude!, _controller.deviceConfig.longitude!),
+                      ),
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () => MapsLauncher.launchCoordinates(
+                    _controller.deviceConfig.latitude!, 
+                    _controller.deviceConfig.longitude!,
+                  ),
+                  icon: const Icon(Icons.map_outlined),
+                  label: const Text('Abrir no Maps'),
+                ),
+              ),
+            ],
           ],
         ),
       ),

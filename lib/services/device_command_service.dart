@@ -3,7 +3,7 @@ import 'device_command_service_stub.dart'
 
 abstract class DeviceCommandService {
   Future<bool> setLight({
-    required String ip,
+    required String hostname,
     required int port,
     required bool isOn,
   });

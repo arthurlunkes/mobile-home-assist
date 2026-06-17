@@ -9,7 +9,7 @@ class ConnectionTestResult {
 }
 
 abstract class ConnectionTester {
-  Future<ConnectionTestResult> testConnection(String ip, int port);
+  Future<ConnectionTestResult> testConnection(String hostname, int port);
 }
 
 ConnectionTester createConnectionTester() => createPlatformConnectionTester();

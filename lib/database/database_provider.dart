@@ -6,7 +6,7 @@ import '../model/home_state.dart';
 
 class DatabaseProvider {
   static const _dbName = 'home_assist.db';
-  static const _dbVersion = 2;
+  static const _dbVersion = 5;
 
   DatabaseProvider._init();
 
@@ -35,10 +35,12 @@ class DatabaseProvider {
     await db.execute('''
       CREATE TABLE ${DeviceConfig.tableName} (
         ${DeviceConfig.fieldId} INTEGER PRIMARY KEY,
-        ${DeviceConfig.fieldIp} TEXT NOT NULL,
+        ${DeviceConfig.fieldHostname} TEXT NOT NULL,
         ${DeviceConfig.fieldPort} INTEGER NOT NULL,
         ${DeviceConfig.fieldMacAddress} TEXT,
         ${DeviceConfig.fieldConnected} INTEGER NOT NULL DEFAULT 0,
+        ${DeviceConfig.fieldLatitude} REAL,
+        ${DeviceConfig.fieldLongitude} REAL,
         ${DeviceConfig.fieldUpdatedAt} TEXT NOT NULL
       );
     ''');
@@ -57,7 +59,7 @@ class DatabaseProvider {
 
     await db.insert(
       DeviceConfig.tableName,
-      DeviceConfig(ip: '', port: 0).toMap(),
+      DeviceConfig(hostname: '', port: 0).toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
 
@@ -69,13 +71,71 @@ class DatabaseProvider {
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    switch (oldVersion) {
-      case 1:
-        await db.execute('''
-          ALTER TABLE ${DeviceConfig.tableName}
-          ADD COLUMN ${DeviceConfig.fieldConnected} INTEGER NOT NULL DEFAULT 0;
-        ''');
-        break;
+    if (oldVersion < 2) {
+      await db.execute('''
+        ALTER TABLE ${DeviceConfig.tableName}
+        ADD COLUMN ${DeviceConfig.fieldConnected} INTEGER NOT NULL DEFAULT 0;
+      ''');
+    }
+
+    if (oldVersion < 3) {
+      await db.execute('''
+        ALTER TABLE ${DeviceConfig.tableName}
+        ADD COLUMN ${DeviceConfig.fieldLatitude} REAL;
+      ''');
+      await db.execute('''
+        ALTER TABLE ${DeviceConfig.tableName}
+        ADD COLUMN ${DeviceConfig.fieldLongitude} REAL;
+      ''');
+    }
+
+    if (oldVersion < 4) {
+      await db.execute('''
+        ALTER TABLE ${DeviceConfig.tableName}
+        ADD COLUMN ${DeviceConfig.fieldHostname} TEXT NOT NULL DEFAULT '';
+      ''');
+    }
+
+    if (oldVersion < 5) {
+      await db.execute('ALTER TABLE ${DeviceConfig.tableName} RENAME TO device_config_old');
+      
+      await db.execute('''
+        CREATE TABLE ${DeviceConfig.tableName} (
+          ${DeviceConfig.fieldId} INTEGER PRIMARY KEY,
+          ${DeviceConfig.fieldHostname} TEXT NOT NULL,
+          ${DeviceConfig.fieldPort} INTEGER NOT NULL,
+          ${DeviceConfig.fieldMacAddress} TEXT,
+          ${DeviceConfig.fieldConnected} INTEGER NOT NULL DEFAULT 0,
+          ${DeviceConfig.fieldLatitude} REAL,
+          ${DeviceConfig.fieldLongitude} REAL,
+          ${DeviceConfig.fieldUpdatedAt} TEXT NOT NULL
+        );
+      ''');
+
+      await db.execute('''
+        INSERT INTO ${DeviceConfig.tableName} (
+          ${DeviceConfig.fieldId},
+          ${DeviceConfig.fieldHostname},
+          ${DeviceConfig.fieldPort},
+          ${DeviceConfig.fieldMacAddress},
+          ${DeviceConfig.fieldConnected},
+          ${DeviceConfig.fieldLatitude},
+          ${DeviceConfig.fieldLongitude},
+          ${DeviceConfig.fieldUpdatedAt}
+        )
+        SELECT 
+          ${DeviceConfig.fieldId},
+          ${DeviceConfig.fieldHostname},
+          ${DeviceConfig.fieldPort},
+          ${DeviceConfig.fieldMacAddress},
+          ${DeviceConfig.fieldConnected},
+          ${DeviceConfig.fieldLatitude},
+          ${DeviceConfig.fieldLongitude},
+          ${DeviceConfig.fieldUpdatedAt}
+        FROM device_config_old
+      ''');
+
+      await db.execute('DROP TABLE device_config_old');
     }
   }
 
