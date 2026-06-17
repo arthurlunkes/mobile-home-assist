@@ -41,6 +41,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _refreshInfo() async {
     await _controller.carregar();
+    await _controller.forceRefresh();
   }
 
   @override
@@ -74,6 +75,24 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Row(
+              children: [
+                Icon(
+                  _controller.deviceConfig.connected ? Icons.wifi : Icons.wifi_off,
+                  color: _controller.deviceConfig.connected ? Colors.green : Colors.red,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _controller.deviceConfig.connected ? 'Conectado ao dispositivo' : 'Dispositivo Desconectado',
+                  style: TextStyle(
+                    color: _controller.deviceConfig.connected ? Colors.green : Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(

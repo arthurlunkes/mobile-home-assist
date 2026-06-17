@@ -6,7 +6,7 @@ import '../model/home_state.dart';
 
 class DatabaseProvider {
   static const _dbName = 'home_assist.db';
-  static const _dbVersion = 5;
+  static const _dbVersion = 6;
 
   DatabaseProvider._init();
 
@@ -37,6 +37,7 @@ class DatabaseProvider {
         ${DeviceConfig.fieldId} INTEGER PRIMARY KEY,
         ${DeviceConfig.fieldHostname} TEXT NOT NULL,
         ${DeviceConfig.fieldPort} INTEGER NOT NULL,
+        ${DeviceConfig.fieldName} TEXT NOT NULL DEFAULT 'Meu Dispositivo',
         ${DeviceConfig.fieldMacAddress} TEXT,
         ${DeviceConfig.fieldConnected} INTEGER NOT NULL DEFAULT 0,
         ${DeviceConfig.fieldLatitude} REAL,
@@ -136,6 +137,13 @@ class DatabaseProvider {
       ''');
 
       await db.execute('DROP TABLE device_config_old');
+    }
+
+    if (oldVersion < 6) {
+      await db.execute('''
+        ALTER TABLE ${DeviceConfig.tableName}
+        ADD COLUMN ${DeviceConfig.fieldName} TEXT NOT NULL DEFAULT 'Meu Dispositivo';
+      ''');
     }
   }
 

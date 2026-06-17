@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 
 import '../dao/device_config_dao.dart';
 import '../model/device_config.dart';
@@ -45,12 +46,13 @@ class ConfigController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> salvar({required String hostname, required int port, String? macAddress}) async {
+  Future<bool> salvar({required String name, required String hostname, required int port, String? macAddress}) async {
     _carregando = true;
     _erroLocalizacao = null;
     notifyListeners();
 
     final novoConfig = DeviceConfig(
+      name: name.trim(),
       hostname: hostname.trim(),
       port: port,
       macAddress: macAddress ?? _config.macAddress,
@@ -85,6 +87,7 @@ class ConfigController extends ChangeNotifier {
 
     if (result.success) {
       await salvar(
+        name: _config.name,
         hostname: 'alarme.local',
         port: 80,
         macAddress: macAddress,
@@ -137,6 +140,7 @@ class ConfigController extends ChangeNotifier {
 
       final novoConfig = DeviceConfig(
         id: _config.id,
+        name: _config.name,
         hostname: _config.hostname,
         port: _config.port,
         macAddress: _config.macAddress,
@@ -197,5 +201,64 @@ class ConfigController extends ChangeNotifier {
     _carregando = false;
     notifyListeners();
     return resultado.connected;
+  }
+
+  Future<bool> resetarDispositivo() async {
+    if (!_config.hasEndpoint) return false;
+    _carregando = true;
+    notifyListeners();
+    try {
+      final response = await http.get(Uri.parse('http://${_config.hostname}:${_config.port}/reset')).timeout(const Duration(seconds: 3));
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    } finally {
+      _carregando = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> limparLocalizacao() async {
+    _carregando = true;
+    notifyListeners();
+
+    final novoConfig = DeviceConfig(
+      id: _config.id,
+      name: _config.name,
+      hostname: _config.hostname,
+      port: _config.port,
+      macAddress: _config.macAddress,
+      connected: _config.connected,
+      latitude: null,
+      longitude: null,
+    );
+
+    final sucesso = await _dao.salvar(novoConfig);
+    if (sucesso) {
+      _config = novoConfig;
+    }
+
+    _carregando = false;
+    notifyListeners();
+    return sucesso;
+  }
+
+  Future<bool> resetarConfiguracoesApp() async {
+    _carregando = true;
+    notifyListeners();
+
+    final novoConfig = DeviceConfig(
+      hostname: '',
+      port: 0,
+    );
+
+    final sucesso = await _dao.salvar(novoConfig);
+    if (sucesso) {
+      _config = novoConfig;
+    }
+
+    _carregando = false;
+    notifyListeners();
+    return sucesso;
   }
 }

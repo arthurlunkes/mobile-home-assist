@@ -13,6 +13,7 @@ class DeviceConfigDao {
         DeviceConfig.fieldId,
         DeviceConfig.fieldHostname,
         DeviceConfig.fieldPort,
+        DeviceConfig.fieldName,
         DeviceConfig.fieldMacAddress,
         DeviceConfig.fieldConnected,
         DeviceConfig.fieldLatitude,

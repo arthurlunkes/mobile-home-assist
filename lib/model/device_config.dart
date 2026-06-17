@@ -3,6 +3,7 @@ class DeviceConfig {
   static const fieldId = 'id';
   static const fieldHostname = 'hostname';
   static const fieldPort = 'port';
+  static const fieldName = 'name';
   static const fieldMacAddress = 'mac_address';
   static const fieldConnected = 'connected';
   static const fieldLatitude = 'latitude';
@@ -12,6 +13,7 @@ class DeviceConfig {
   int id;
   String hostname;
   int port;
+  String name;
   String? macAddress;
   bool connected;
   double? latitude;
@@ -22,6 +24,7 @@ class DeviceConfig {
     this.id = 1,
     required this.hostname,
     required this.port,
+    this.name = 'Meu Dispositivo',
     this.macAddress,
     this.connected = false,
     this.latitude,
@@ -38,6 +41,7 @@ class DeviceConfig {
       fieldId: id,
       fieldHostname: hostname,
       fieldPort: port,
+      fieldName: name,
       fieldMacAddress: macAddress,
       fieldConnected: connected ? 1 : 0,
       fieldLatitude: latitude,
@@ -51,6 +55,7 @@ class DeviceConfig {
       id: map[fieldId] is int ? map[fieldId] as int : 1,
       hostname: map[fieldHostname] is String ? map[fieldHostname] as String : '',
       port: map[fieldPort] is int ? map[fieldPort] as int : 0,
+      name: map[fieldName] is String ? map[fieldName] as String : 'Meu Dispositivo',
       macAddress: map[fieldMacAddress] as String?,
       connected: map[fieldConnected] == 1,
       latitude: _toDouble(map[fieldLatitude]),

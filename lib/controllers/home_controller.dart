@@ -62,11 +62,13 @@ class HomeController extends ChangeNotifier {
 
     final baseUrl = 'http://${_deviceConfig.hostname}:${_deviceConfig.port}';
     bool mudou = false;
+    bool respondendo = false;
 
     // Busca Temperatura
     try {
       final response = await http.get(Uri.parse('$baseUrl/temperature')).timeout(const Duration(seconds: 3));
       if (response.statusCode == 200) {
+        respondendo = true;
         final data = jsonDecode(response.body);
         if (data is Map && data.containsKey('temperature')) {
           final temp = (data['temperature'] as num).toDouble();
@@ -82,6 +84,7 @@ class HomeController extends ChangeNotifier {
     try {
       final response = await http.get(Uri.parse('$baseUrl/humidity')).timeout(const Duration(seconds: 3));
       if (response.statusCode == 200) {
+        respondendo = true;
         final data = jsonDecode(response.body);
         if (data is Map && data.containsKey('humidity')) {
           _state.humidity = (data['humidity'] as num).toDouble();
@@ -94,6 +97,7 @@ class HomeController extends ChangeNotifier {
     try {
       final response = await http.get(Uri.parse('$baseUrl/luminosity')).timeout(const Duration(seconds: 3));
       if (response.statusCode == 200) {
+        respondendo = true;
         final data = jsonDecode(response.body);
         if (data is Map && data.containsKey('luminosity')) {
           _state.luminosity = (data['luminosity'] as num).toDouble();
@@ -102,11 +106,27 @@ class HomeController extends ChangeNotifier {
       }
     } catch (_) {}
 
+    if (_deviceConfig.connected != respondendo) {
+      _deviceConfig.connected = respondendo;
+      await _deviceConfigDao.salvar(_deviceConfig);
+      mudou = true;
+    }
+
     if (mudou) {
       // Salva estado para persistência local
       await _dao.salvar(_state);
       notifyListeners();
     }
+  }
+
+  Future<void> forceRefresh() async {
+    _carregando = true;
+    notifyListeners();
+    
+    await _buscarSensores();
+    
+    _carregando = false;
+    notifyListeners();
   }
 
   String formatarValor(double? value, String unidade) {

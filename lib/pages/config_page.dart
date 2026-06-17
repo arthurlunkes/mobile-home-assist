@@ -37,6 +37,42 @@ class _ConfigPageState extends State<ConfigPage> {
     }
   }
 
+  Future<void> _editarConfiguracoes() async {
+    final config = _controller.config;
+    final nameCtrl = TextEditingController(text: config.name);
+    final hostCtrl = TextEditingController(text: config.hostname);
+    final portCtrl = TextEditingController(text: config.port.toString());
+    
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Editar Dispositivo'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Nome do Dispositivo')),
+            TextField(controller: hostCtrl, decoration: const InputDecoration(labelText: 'Hostname/IP')),
+            TextField(controller: portCtrl, decoration: const InputDecoration(labelText: 'Porta'), keyboardType: TextInputType.number),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar')),
+          ElevatedButton(
+            onPressed: () async {
+              await _controller.salvar(
+                name: nameCtrl.text,
+                hostname: hostCtrl.text,
+                port: int.tryParse(portCtrl.text) ?? 80,
+              );
+              if (context.mounted) Navigator.of(context).pop();
+            },
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> connectDevice() async {
     bool step1Done = false;
     bool loadingNetworks = false;
@@ -344,10 +380,12 @@ class _ConfigPageState extends State<ConfigPage> {
                       ),
                     ),
                     const SizedBox(height: 10),
+                    Text('Nome: ${config.name}'),
+                    const SizedBox(height: 6),
                     Text('Status: $status'),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 6),
                     Text(
-                      'Hostname: ${config.hostname.isEmpty ? '--' : config.hostname}',
+                      'Hostname/IP: ${config.hostname.isEmpty ? '--' : config.hostname}',
                     ),
                     const SizedBox(height: 6),
                     Text('Porta: ${config.port > 0 ? config.port : '--'}'),
@@ -365,7 +403,13 @@ class _ConfigPageState extends State<ConfigPage> {
             ),
             const SizedBox(height: 20),
             ActionButton(
-              label: 'Conectar Dispositivo',
+              label: 'Editar Configurações Manuais',
+              icon: Icons.edit,
+              onPressed: _editarConfiguracoes,
+            ),
+            const SizedBox(height: 12),
+            ActionButton(
+              label: 'Conectar Dispositivo Novo (Wifi)',
               icon: Icons.wifi,
               onPressed: connectDevice,
             ),
@@ -377,9 +421,48 @@ class _ConfigPageState extends State<ConfigPage> {
             ),
             const SizedBox(height: 12),
             ActionButton(
-              label: _controller.buscandoLocalizacao ? 'Buscando Localização...' : 'Localização atual',
+              label: _controller.buscandoLocalizacao ? 'Buscando Localização...' : 'Salvar Localização Atual',
               icon: Icons.my_location,
               onPressed: _controller.buscandoLocalizacao ? () {} : _atualizarLocalizacao,
+            ),
+            const SizedBox(height: 12),
+            ActionButton(
+              label: 'Limpar Localização',
+              icon: Icons.location_off,
+              onPressed: _controller.carregando ? () {} : () async {
+                 await _controller.limparLocalizacao();
+                 if (context.mounted) {
+                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Localização limpa do app.')));
+                 }
+              },
+            ),
+            const SizedBox(height: 12),
+            ActionButton(
+              label: 'Restaurar Configs do App',
+              icon: Icons.restore,
+              onPressed: _controller.carregando ? () {} : () async {
+                 await _controller.resetarConfiguracoesApp();
+                 if (context.mounted) {
+                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Configurações locais apagadas.')));
+                 }
+              },
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _controller.carregando ? null : () async {
+                 final ok = await _controller.resetarDispositivo();
+                 if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? 'ESP32 resetado com sucesso!' : 'Erro ao resetar o ESP32.')));
+                 }
+              },
+              icon: const Icon(Icons.warning),
+              label: const Text('Resetar Dispositivo (Fábrica)'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red, 
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                minimumSize: const Size(double.infinity, 50),
+              ),
             ),
             if (_controller.buscandoLocalizacao) ...[
               const SizedBox(height: 24),
