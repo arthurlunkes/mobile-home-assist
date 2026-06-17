@@ -93,7 +93,7 @@ class _HomePageState extends State<HomePage> {
                 Expanded(
                   child: MetricCard(
                     title: 'Luminosidade',
-                    value: _controller.formatarValor(state.luminosity, 'lx'),
+                    value: _controller.formatarValor(state.luminosity, '%'),
                   ),
                 ),
               ],

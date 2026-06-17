@@ -1,4 +1,7 @@
 import 'package:flutter/foundation.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 import '../dao/home_state_dao.dart';
 import '../dao/device_config_dao.dart';
@@ -20,11 +23,18 @@ class HomeController extends ChangeNotifier {
   bool _buscandoLocalizacao = false;
   HomeState _state = HomeState();
   DeviceConfig _deviceConfig = DeviceConfig(hostname: '', port: 0);
+  Timer? _pollingTimer;
 
   bool get carregando => _carregando;
   bool get buscandoLocalizacao => _buscandoLocalizacao;
   HomeState get state => _state;
   DeviceConfig get deviceConfig => _deviceConfig;
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
 
   Future<void> carregar() async {
     _carregando = true;
@@ -35,6 +45,68 @@ class HomeController extends ChangeNotifier {
 
     _carregando = false;
     notifyListeners();
+
+    _iniciarPolling();
+  }
+
+  void _iniciarPolling() {
+    _pollingTimer?.cancel();
+    _buscarSensores();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _buscarSensores();
+    });
+  }
+
+  Future<void> _buscarSensores() async {
+    if (!_deviceConfig.hasEndpoint) return;
+
+    final baseUrl = 'http://${_deviceConfig.hostname}:${_deviceConfig.port}';
+    bool mudou = false;
+
+    // Busca Temperatura
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/temperature')).timeout(const Duration(seconds: 3));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is Map && data.containsKey('temperature')) {
+          final temp = (data['temperature'] as num).toDouble();
+          if (temp != -999) { // Ignora leitura com erro do ADC
+            _state.temperature = temp;
+            mudou = true;
+          }
+        }
+      }
+    } catch (_) {}
+
+    // Busca Umidade (preparado para quando o endpoint for implementado)
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/humidity')).timeout(const Duration(seconds: 3));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is Map && data.containsKey('humidity')) {
+          _state.humidity = (data['humidity'] as num).toDouble();
+          mudou = true;
+        }
+      }
+    } catch (_) {}
+
+    // Busca Luminosidade (preparado para quando o endpoint for implementado)
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/luminosity')).timeout(const Duration(seconds: 3));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is Map && data.containsKey('luminosity')) {
+          _state.luminosity = (data['luminosity'] as num).toDouble();
+          mudou = true;
+        }
+      }
+    } catch (_) {}
+
+    if (mudou) {
+      // Salva estado para persistência local
+      await _dao.salvar(_state);
+      notifyListeners();
+    }
   }
 
   String formatarValor(double? value, String unidade) {

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class Esp32DiscoveryService {
@@ -10,8 +11,8 @@ class Esp32DiscoveryService {
       final url = Uri.parse('http://$_apIp/scan');
       final response = await http.get(url).timeout(const Duration(seconds: 5));
 
-      print('Status Code: ${response.statusCode}');
-      print('Body: ${response.body}');
+      debugPrint('Status Code: ${response.statusCode}');
+      debugPrint('Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -32,16 +33,16 @@ class Esp32DiscoveryService {
               }
             }
           }
-          print('SSIDs processados: ${ssids.toList()}');
+          debugPrint('SSIDs processados: ${ssids.toList()}');
           return ssids.toList();
         } else {
-          print('Formato JSON inesperado: $data');
+          debugPrint('Formato JSON inesperado: $data');
         }
       }
       return [];
     } catch (e, stacktrace) {
-      print('Erro ao buscar redes: $e');
-      print('Stacktrace: $stacktrace');
+      debugPrint('Erro ao buscar redes: $e');
+      debugPrint('Stacktrace: $stacktrace');
       return [];
     }
   }

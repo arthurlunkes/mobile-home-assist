@@ -3,6 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:maps_launcher/maps_launcher.dart';
 
 import '../controllers/config_controller.dart';
+import '../model/provision_result.dart';
 import '../services/wifi_scanner_service.dart';
 import '../widgets/action_button.dart';
 
@@ -47,7 +48,7 @@ class _ConfigPageState extends State<ConfigPage> {
     final passwordController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showDialog<dynamic>(
       context: context,
       barrierDismissible: false,
       builder: (context) {
@@ -154,7 +155,7 @@ class _ConfigPageState extends State<ConfigPage> {
                     else
                       DropdownButtonFormField<String>(
                         isExpanded: true,
-                        value: selectedSsid,
+                        initialValue: selectedSsid,
                         decoration: const InputDecoration(labelText: 'Rede WiFi (SSID)'),
                         items: networks.map((net) {
                           return DropdownMenuItem(
@@ -252,7 +253,7 @@ class _ConfigPageState extends State<ConfigPage> {
     
     if (!mounted) return;
 
-    final result = confirmed;
+    final ProvisionResult result = confirmed;
 
     if (result.success) {
       final macMsg = result.macAddress != null
