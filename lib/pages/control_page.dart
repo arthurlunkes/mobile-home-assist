@@ -58,22 +58,22 @@ class _ControlPageState extends State<ControlPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Luz: ${state.lightOn ? 'Ligada' : 'Desligada'}'),
+                    Text('Alarme: ${state.lightOn ? 'Ligado' : 'Desligado'}'),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 12),
             const Text(
-              'Luz',
+              'Alarme',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 10),
 
             ActionButton(
-              label: state.lightOn ? 'Desligar Luz' : 'Ligar Luz',
-              icon: state.lightOn ? Icons.lightbulb_outline : Icons.lightbulb,
+              label: state.lightOn ? 'Desligar Alarme' : 'Ligar Alarme',
+              icon: state.lightOn ? Icons.notifications_off : Icons.notifications_active,
               onPressed: state.lightOn ? _turnLightOff : _turnLightOn,
             ),
           ],

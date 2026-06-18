@@ -51,7 +51,9 @@ class _ConfigPageState extends State<ConfigPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Nome do Dispositivo')),
+            const SizedBox(height: 16),
             TextField(controller: hostCtrl, decoration: const InputDecoration(labelText: 'Hostname/IP')),
+            const SizedBox(height: 16),
             TextField(controller: portCtrl, decoration: const InputDecoration(labelText: 'Porta'), keyboardType: TextInputType.number),
           ],
         ),
@@ -80,6 +82,7 @@ class _ConfigPageState extends State<ConfigPage> {
     List<WifiNetwork> networks = [];
     String? selectedSsid;
     bool isManualSsid = false;
+    bool obscurePassword = true;
     final ssidManualController = TextEditingController();
     final passwordController = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -197,7 +200,7 @@ class _ConfigPageState extends State<ConfigPage> {
                           return DropdownMenuItem(
                             value: net.ssid, 
                             child: Text(
-                              '${net.ssid} (${net.rssi} dBm)',
+                              net.ssid,
                               overflow: TextOverflow.ellipsis,
                             ),
                           );
@@ -232,11 +235,19 @@ class _ConfigPageState extends State<ConfigPage> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: passwordController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Senha da rede WiFi',
+                        suffixIcon: IconButton(
+                          icon: Icon(obscurePassword ? Icons.visibility : Icons.visibility_off),
+                          onPressed: () {
+                            setDialogState(() {
+                              obscurePassword = !obscurePassword;
+                            });
+                          },
+                        ),
                       ),
                       keyboardType: TextInputType.visiblePassword,
-                      obscureText: true,
+                      obscureText: obscurePassword,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Informe a senha';
@@ -349,6 +360,31 @@ class _ConfigPageState extends State<ConfigPage> {
     return value.toStringAsFixed(6);
   }
 
+  Future<bool> _confirmarAcao(String titulo, String mensagem) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(titulo),
+        content: Text(mensagem),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final config = _controller.config;
@@ -401,67 +437,95 @@ class _ConfigPageState extends State<ConfigPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            ActionButton(
-              label: 'Editar Configurações Manuais',
-              icon: Icons.edit,
-              onPressed: _editarConfiguracoes,
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text('Conexão', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    ActionButton(label: 'Editar Configurações Manuais', icon: Icons.edit, onPressed: _editarConfiguracoes),
+                    const SizedBox(height: 8),
+                    ActionButton(label: 'Conectar Dispositivo Novo (Wifi)', icon: Icons.wifi, onPressed: connectDevice),
+                    const SizedBox(height: 8),
+                    ActionButton(label: 'Testar conexão', icon: Icons.network_check, onPressed: _controller.carregando ? () {} : _testarConexao),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 12),
-            ActionButton(
-              label: 'Conectar Dispositivo Novo (Wifi)',
-              icon: Icons.wifi,
-              onPressed: connectDevice,
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text('Localização', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    ActionButton(
+                      label: _controller.buscandoLocalizacao ? 'Buscando Localização...' : 'Salvar Localização Atual',
+                      icon: Icons.my_location,
+                      onPressed: _controller.buscandoLocalizacao ? () {} : _atualizarLocalizacao,
+                    ),
+                    const SizedBox(height: 8),
+                    ActionButton(
+                      label: 'Limpar Localização',
+                      icon: Icons.location_off,
+                      onPressed: _controller.carregando ? () {} : () async {
+                         await _controller.limparLocalizacao();
+                         if (context.mounted) {
+                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Localização limpa do app.')));
+                         }
+                      },
+                    ),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 12),
-            ActionButton(
-              label: 'Testar conexão',
-              icon: Icons.network_check,
-              onPressed: _controller.carregando ? () {} : _testarConexao,
-            ),
-            const SizedBox(height: 12),
-            ActionButton(
-              label: _controller.buscandoLocalizacao ? 'Buscando Localização...' : 'Salvar Localização Atual',
-              icon: Icons.my_location,
-              onPressed: _controller.buscandoLocalizacao ? () {} : _atualizarLocalizacao,
-            ),
-            const SizedBox(height: 12),
-            ActionButton(
-              label: 'Limpar Localização',
-              icon: Icons.location_off,
-              onPressed: _controller.carregando ? () {} : () async {
-                 await _controller.limparLocalizacao();
-                 if (context.mounted) {
-                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Localização limpa do app.')));
-                 }
-              },
-            ),
-            const SizedBox(height: 12),
-            ActionButton(
-              label: 'Restaurar Configs do App',
-              icon: Icons.restore,
-              onPressed: _controller.carregando ? () {} : () async {
-                 await _controller.resetarConfiguracoesApp();
-                 if (context.mounted) {
-                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Configurações locais apagadas.')));
-                 }
-              },
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _controller.carregando ? null : () async {
-                 final ok = await _controller.resetarDispositivo();
-                 if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? 'ESP32 resetado com sucesso!' : 'Erro ao resetar o ESP32.')));
-                 }
-              },
-              icon: const Icon(Icons.warning),
-              label: const Text('Resetar Dispositivo (Fábrica)'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red, 
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                minimumSize: const Size(double.infinity, 50),
+            const SizedBox(height: 16),
+            Card(
+              color: Colors.red.shade50,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text('Zona de Perigo', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.red)),
+                    const SizedBox(height: 12),
+                    ActionButton(
+                      label: 'Restaurar Configs do App',
+                      icon: Icons.restore,
+                      onPressed: _controller.carregando ? () {} : () async {
+                         final confirma = await _confirmarAcao('Restaurar Configurações', 'Deseja realmente apagar os dados salvos localmente no app?');
+                         if (!confirma) return;
+                         await _controller.resetarConfiguracoesApp();
+                         if (context.mounted) {
+                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Configurações locais apagadas.')));
+                         }
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      onPressed: _controller.carregando ? null : () async {
+                         final confirma = await _confirmarAcao('Resetar ESP32', 'Isso irá apagar as configurações de rede do ESP32. Deseja continuar?');
+                         if (!confirma) return;
+                         final ok = await _controller.resetarDispositivo();
+                         if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? 'ESP32 resetado com sucesso!' : 'Erro ao resetar o ESP32.')));
+                         }
+                      },
+                      icon: const Icon(Icons.warning),
+                      label: const Text('Resetar Dispositivo (Fábrica)'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red, 
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             if (_controller.buscandoLocalizacao) ...[
