@@ -6,6 +6,23 @@ import '../model/provision_result.dart';
 class WifiProvisionService {
   static const String _apIp = '192.168.4.1';
 
+  Future<String?> getMacAddress() async {
+    try {
+      final url = Uri.parse('http://$_apIp/status');
+      final response = await http.get(url).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is Map && data.containsKey('mac')) {
+          return data['mac'].toString();
+        }
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   Future<ProvisionResult> provisionDevice({
     required String ssid,
     required String password,

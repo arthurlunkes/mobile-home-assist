@@ -7,7 +7,6 @@ import '../dao/device_config_dao.dart';
 import '../model/device_config.dart';
 import '../model/provision_result.dart';
 import '../services/connection_tester.dart';
-import '../services/esp32_discovery_service.dart';
 import '../services/wifi_provision_service.dart';
 
 class ConfigController extends ChangeNotifier {
@@ -15,16 +14,13 @@ class ConfigController extends ChangeNotifier {
     DeviceConfigDao? dao,
     ConnectionTester? connectionTester,
     WifiProvisionService? wifiProvisionService,
-    Esp32DiscoveryService? discoveryService,
   }) : _dao = dao ?? DeviceConfigDao(),
        _connectionTester = connectionTester ?? createConnectionTester(),
-       _wifiProvisionService = wifiProvisionService ?? WifiProvisionService(),
-       _discoveryService = discoveryService ?? Esp32DiscoveryService();
+       _wifiProvisionService = wifiProvisionService ?? WifiProvisionService();
 
   final DeviceConfigDao _dao;
   final ConnectionTester _connectionTester;
   final WifiProvisionService _wifiProvisionService;
-  final Esp32DiscoveryService _discoveryService;
 
   bool _carregando = false;
   bool _buscandoLocalizacao = false;
@@ -78,7 +74,7 @@ class ConfigController extends ChangeNotifier {
     _carregando = true;
     notifyListeners();
 
-    final macAddress = await _discoveryService.getMacAddress();
+    final macAddress = await _wifiProvisionService.getMacAddress();
 
     final result = await _wifiProvisionService.provisionDevice(
       ssid: ssid,
@@ -103,9 +99,6 @@ class ConfigController extends ChangeNotifier {
     );
   }
 
-  Future<List<String>> getNetworks() async {
-    return _discoveryService.getNetworks();
-  }
 
   Future<bool> atualizarLocalizacaoAtual() async {
     _buscandoLocalizacao = true;
