@@ -1,11 +1,11 @@
 {
-    "name": "grid_sorter",
-    "short_name": "grid_sorter",
+    "name": "home_assist",
+    "short_name": "home_assist",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A grid sorter made with Flutter.",
+    "description": "A home assistant app made with Flutter.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

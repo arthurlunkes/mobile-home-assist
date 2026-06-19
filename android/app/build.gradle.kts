@@ -16,7 +16,7 @@ if (localPropertiesFile.exists()) {
 val mapsApiKey = localProperties.getProperty("MAPS_API_KEY") ?: ""
 
 android {
-    namespace = "dev.arthurlunkes.com.br.grid_sorter"
+    namespace = "dev.arthurlunkes.com.br.home_assist"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -31,7 +31,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "dev.arthurlunkes.com.br.grid_sorter"
+        applicationId = "dev.arthurlunkes.com.br.home_assist"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

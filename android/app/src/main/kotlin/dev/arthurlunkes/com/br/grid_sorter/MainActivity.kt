@@ -1,4 +1,4 @@
-package dev.arthurlunkes.com.br.grid_sorter
+package dev.arthurlunkes.com.br.home_assist
 
 import io.flutter.embedding.android.FlutterActivity
 

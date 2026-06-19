@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "dev.arthurlunkes.com.br" "\0"
-            VALUE "FileDescription", "grid_sorter" "\0"
+            VALUE "FileDescription", "home_assist" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "grid_sorter" "\0"
+            VALUE "InternalName", "home_assist" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 dev.arthurlunkes.com.br. All rights reserved." "\0"
-            VALUE "OriginalFilename", "grid_sorter.exe" "\0"
-            VALUE "ProductName", "grid_sorter" "\0"
+            VALUE "OriginalFilename", "home_assist.exe" "\0"
+            VALUE "ProductName", "home_assist" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

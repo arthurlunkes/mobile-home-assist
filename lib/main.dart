@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:grid_sorter/pages/home_page.dart';
+import 'package:home_assist/pages/home_page.dart';
 
 import 'theme/app_colors.dart';
 
